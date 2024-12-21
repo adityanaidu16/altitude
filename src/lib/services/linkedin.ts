@@ -24,8 +24,7 @@ class LinkedInService {
         } catch (e) {
           // If JSON parsing fails, use text response
           const text = await response.text();
-          throw new Error(text || `HTTP error ${response.status}`);
-        }
+          throw new Error(`${text || `HTTP error ${response.status}`}. Original error: ${e instanceof Error ? e.message : String(e)}`);        }
       }
       // If not JSON, get text response
       const text = await response.text();
@@ -73,13 +72,16 @@ class LinkedInService {
         }),
       });
       return response.prospects;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Search prospects error:', error);
-      throw new Error(`Failed to search prospects: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Failed to search prospects: ${error.message}`);
+      }
+      throw new Error('Failed to search prospects: Unknown error');
     }
   }
 
-  async sendConnectionRequest(prospectId: string, message: string): Promise<boolean> {
+  async sendConnectionRequest(id: string, prospectId: string, message: string): Promise<boolean> {
     try {
       const response = await this.fetchWithErrorHandling<{ success: boolean }>('/api/connection/request', {
         method: 'POST',
@@ -89,13 +91,16 @@ class LinkedInService {
         }),
       });
       return response.success;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Send connection request error:', error);
-      throw new Error(`Failed to send connection request: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Failed to send connection request: ${error.message}`);
+      }
+      throw new Error('Failed to send connection requests: Unknown error');
     }
   }
 
-  async sendMessage(connectionId: string, message: string): Promise<boolean> {
+  async sendMessage(id: string, connectionId: string, message: string): Promise<boolean> {
     try {
       const response = await this.fetchWithErrorHandling<{ success: boolean }>('/api/message/send', {
         method: 'POST',
@@ -105,9 +110,12 @@ class LinkedInService {
         }),
       });
       return response.success;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Send message error:', error);
-      throw new Error(`Failed to send message: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Failed to send message: ${error.message}`);
+      }
+      throw new Error('Failed to send message: Unknown error');
     }
   }
 
@@ -117,9 +125,12 @@ class LinkedInService {
         method: 'GET',
       });
       return response.status;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Check connection status error:', error);
-      throw new Error(`Failed to check connection status: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Check connection status error: ${error.message}`);
+      }
+      throw new Error('Check connection status error: Unknown error');
     }
   }
 }

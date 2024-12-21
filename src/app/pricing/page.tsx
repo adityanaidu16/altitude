@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 
@@ -46,7 +46,7 @@ export default function PricingPage() {
       {/* Header */}
       <div className="pt-24 pb-16 text-center">
         <h1 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
-        <p className="text-xl text-gray-600">Choose the plan that's right for your career journey</p>
+        <p className="text-xl text-gray-600">Choose the plan that&apos;s right for your career journey</p>
       </div>
 
       <div className="flex justify-center">
@@ -107,10 +107,3 @@ export default function PricingPage() {
     </div>
   );
 }
-
-const Feature = ({ text }: { text: string }) => (
-  <li className="flex items-center gap-2 text-gray-600">
-    <Check className="h-5 w-5 text-[#031b1d]" />
-    {text}
-  </li>
-);

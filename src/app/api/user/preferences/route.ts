@@ -2,14 +2,46 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { fetchLinkedInProfile } from '@/lib/linkedin';
+import type { Prisma } from '@prisma/client';
+
+// Interface matching Prisma's expected JSON structure
+type LinkedInProfile = {
+  basic_info?: {
+    name: string;
+    industry?: string;
+    location?: string;
+    headline?: string;
+    email?: string;
+  };
+  experience?: Array<{
+    title: string;
+    company: string;
+    duration: string;
+    location?: string;
+    description?: string;
+  }>;
+  education?: Array<{
+    school: string;
+    degree?: string;
+    field?: string;
+  }>;
+  skills?: string[];
+  honors?: Array<{
+    title: string;
+    issuer?: string;
+    year?: number;
+  }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any; // Add index signature for Prisma JSON compatibility
+};
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     console.log('Preferences update - Session:', session);
-    
+
     if (!session?.user?.email) {
       console.log('No session or email found');
       return NextResponse.json(
@@ -34,22 +66,19 @@ export async function POST(req: Request) {
     console.log('Received preferences:', preferences);
 
     // Fetch LinkedIn profile data if username is provided
-    let linkedinProfile = null;
+    let linkedinProfile: LinkedInProfile | null = null;
     if (preferences.linkedinUsername) {
       console.log('Fetching LinkedIn profile for:', preferences.linkedinUsername);
       linkedinProfile = await fetchLinkedInProfile(preferences.linkedinUsername);
-      
-      // Log the full profile data for debugging
       console.log('LinkedIn profile response:', JSON.stringify(linkedinProfile, null, 2));
 
-      // Only consider it a failure if we got null AND we needed the profile
       if (!linkedinProfile && preferences.linkedinUsername) {
         console.log('Failed to fetch LinkedIn profile - continuing with other updates');
       }
     }
 
-    // Prepare update data, only including linkedinProfile if it exists
-    const updateData = {
+    // Prepare the update data using Prisma's types
+    const updateData: Prisma.UserUpdateInput = {
       careerGoal: preferences.careerGoal,
       industry: preferences.industry,
       targetRoles: preferences.targetRoles,
@@ -57,9 +86,9 @@ export async function POST(req: Request) {
       updatedAt: new Date()
     };
 
-    // Only add linkedinProfile to updateData if it exists and isn't null
+    // Add linkedinProfile to updateData if it exists and isn't empty
     if (linkedinProfile && Object.keys(linkedinProfile).length > 0) {
-      updateData['linkedinProfile'] = linkedinProfile;
+      updateData.linkedinProfile = linkedinProfile as Prisma.InputJsonValue;
     }
 
     console.log('Updating user with data:', JSON.stringify(updateData, null, 2));

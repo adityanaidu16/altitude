@@ -34,9 +34,18 @@ import {
   Filter,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Prospect } from '@/types/campaign';
 
 // Basic Dialog Component to avoid recursion
-const BasicDialog = ({ isOpen, onClose, children }) => {
+const BasicDialog = ({ 
+  isOpen,
+  onClose,
+  children 
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -66,7 +75,7 @@ const STATUS_BADGES = {
   FAILED: { variant: "outline", label: "Failed" }
 };
 
-const cleanName = (name) => {
+const cleanName = (name: string) => {
   if (!name) return '';
   const lowerName = name.toLowerCase();
   const linkedInIndex = lowerName.indexOf('linkedin');
@@ -76,14 +85,21 @@ const cleanName = (name) => {
   return name.replace(/[-|]+$/, '').replace(/www\..*$/, '').trim();
 };
 
-export default function ProspectList({ initialProspects, onError }) {
+interface ProspectListProps {
+  initialProspects: Prospect[];
+}
+
+export default function ProspectList({ 
+  initialProspects,
+}: ProspectListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedProspect, setSelectedProspect] = useState(null);
+  const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
   const { toast } = useToast();
 
-  const handleViewMessage = (prospect) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleViewMessage = (prospect: any) => {
     setSelectedProspect(prospect);
     setDialogOpen(true);
   };
@@ -93,7 +109,7 @@ export default function ProspectList({ initialProspects, onError }) {
     setSelectedProspect(null);
   };
 
-  const handleCopyMessage = (text) => {
+  const handleCopyMessage = (text: string | undefined) => {
     if (text) {
       navigator.clipboard.writeText(text);
       toast({
@@ -163,8 +179,8 @@ export default function ProspectList({ initialProspects, onError }) {
                 <TableCell>{prospect.company}</TableCell>
                 <TableCell>{prospect.position}</TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_BADGES[prospect.status]?.variant || "default"}>
-                    {STATUS_BADGES[prospect.status]?.label || prospect.status}
+                  <Badge variant={STATUS_BADGES[prospect.status as keyof typeof STATUS_BADGES]?.variant as "outline" | "secondary" | "default" | "destructive"}>
+                    {STATUS_BADGES[prospect.status as keyof typeof STATUS_BADGES]?.label || prospect.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -210,7 +226,7 @@ export default function ProspectList({ initialProspects, onError }) {
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium">Message:</p>
-              <p className="text-sm">{selectedProspect.message.text}</p>
+              <p className="text-sm">{selectedProspect?.message?.message?.text}</p>
             </div>
             {selectedProspect.message.commonalities?.key_points && (
               <div className="space-y-2">
@@ -235,7 +251,7 @@ export default function ProspectList({ initialProspects, onError }) {
             <div className="flex justify-end space-x-2 mt-4">
               <Button
                 variant="outline"
-                onClick={() => handleCopyMessage(selectedProspect.message?.text)}
+                onClick={() => handleCopyMessage(selectedProspect.message?.message?.text)}
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy Message

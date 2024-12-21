@@ -16,6 +16,7 @@ const updateSettingsSchema = z.object({
 
 export async function PATCH(request: Request) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const token = await getToken({ req: request as any });
     if (!token) {
       return NextResponse.json(
@@ -96,6 +97,7 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((error as any).code === 'P2025') {
       return NextResponse.json(
         { error: 'User not found' },

@@ -3,13 +3,55 @@ import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import { redirect } from 'next/navigation';
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../api/auth/[...nextauth]/auth";
 import DashboardClient from "./client";
+import type { Campaign, Prospect, CampaignStats } from "@/types/campaign";
+
+// Helper function to calculate campaign stats
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function calculateCampaignStats(prospects: any[]): CampaignStats {
+  return {
+    total: prospects.length,
+    pending: prospects.filter(p => p.status === 'PENDING_VALIDATION' || p.status === 'CONNECTION_PENDING').length,
+    connected: prospects.filter(p => p.status === 'CONNECTION_ACCEPTED').length,
+    messaged: prospects.filter(p => p.status === 'MESSAGE_SENT').length
+  };
+}
+
+// Transform Prisma prospect data to match Prospect interface
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function transformProspect(prospect: any): Prospect {
+  return {
+    id: prospect.id,
+    name: prospect.name,
+    position: prospect.position || '',
+    company: prospect.company || '',
+    status: prospect.status,
+    linkedinUrl: prospect.linkedinUrl,
+    publicId: prospect.publicId || '', // Default value since it's required
+    message: prospect.message || {
+      message: { text: '' }
+    },
+    validationData: prospect.validationData,
+    nextActionAt: prospect.nextActionAt?.toISOString(),
+    createdAt: prospect.createdAt.toISOString(),
+    updatedAt: prospect.createdAt.toISOString(), // Using createdAt as fallback
+    connectionId: prospect.connectionId
+  };
+}
 
 async function getCampaignData(userId: string) {
-  const campaigns = await prisma.campaign.findMany({
+  const prismaData = await prisma.campaign.findMany({
     where: { userId },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      targetCompany: true,
+      status: true,
+      messageTemplate: true,
+      autoApprove: true,
+      createdAt: true,
+      updatedAt: true,
       prospects: {
         select: {
           id: true,
@@ -18,6 +60,8 @@ async function getCampaignData(userId: string) {
           company: true,
           status: true,
           linkedinUrl: true,
+          publicId: true,
+          connectionId: true,
           message: true,
           validationData: true,
           nextActionAt: true,
@@ -27,29 +71,38 @@ async function getCampaignData(userId: string) {
     },
     orderBy: { createdAt: 'desc' }
   });
-  return campaigns;
+
+  // Transform the data to match the Campaign interface
+  return prismaData.map(campaign => ({
+    id: campaign.id,
+    name: campaign.name,
+    targetCompany: campaign.targetCompany,
+    status: campaign.status,
+    messageTemplate: campaign.messageTemplate || undefined,
+    autoApprove: campaign.autoApprove,
+    prospects: campaign.prospects.map(transformProspect),
+    stats: calculateCampaignStats(campaign.prospects),
+    createdAt: campaign.createdAt.toISOString(),
+    updatedAt: campaign.updatedAt.toISOString()
+  } as Campaign));
 }
 
 async function getDashboardStats(userId: string) {
   const [campaignCount, prospectCount, connectedCount, messagedCount] = await Promise.all([
-    // Get total campaigns
     prisma.campaign.count({
       where: { userId }
     }),
-    // Get total prospects
     prisma.prospect.count({
       where: {
         campaign: { userId }
       }
     }),
-    // Get connected prospects
     prisma.prospect.count({
       where: {
         campaign: { userId },
         status: 'CONNECTION_ACCEPTED'
       }
     }),
-    // Get messaged prospects
     prisma.prospect.count({
       where: {
         campaign: { userId },
@@ -67,13 +120,12 @@ async function getDashboardStats(userId: string) {
 }
 
 export default async function DashboardPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const session = await getServerSession(authOptions as any) as Session;
-
   if (!session?.user?.email) {
     redirect('/auth/signin');
   }
 
-  // Get user
   const user = await prisma.user.findUnique({
     where: {
       email: session.user.email,
@@ -92,19 +144,18 @@ export default async function DashboardPage() {
     redirect('/auth/signin');
   }
 
-  // Fetch all necessary data
   const [campaigns, stats] = await Promise.all([
     getCampaignData(user.id),
     getDashboardStats(user.id)
   ]);
 
   return (
-    <DashboardClient 
-      initialCampaigns={campaigns} 
+    <DashboardClient
+      initialCampaigns={campaigns}
       stats={stats}
       user={{
         id: user.id,
-        name: user.name,
+        name: user.name || '',
         email: user.email,
         plan: user.plan,
         pendingDowngrade: user.pendingDowngrade,

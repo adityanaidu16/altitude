@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '../auth/[...nextauth]/auth';
 import { ProspectStatus } from '@prisma/client';
 import { z } from 'zod';
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const campaign = await prisma.campaign.findFirst({
       where: {
         id: validatedData.campaignId,
-        userId: session.user.id
+        userId: session.user.id?.toString()
       }
     });
 

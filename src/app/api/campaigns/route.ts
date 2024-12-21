@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { linkedInService } from '@/lib/services/linkedin';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '../auth/[...nextauth]/auth';
 import { z } from 'zod';
 import { CampaignStatus, ProspectStatus } from '@prisma/client';
 import { rateLimit } from '@/lib/rate-limit';
@@ -46,7 +46,7 @@ async function calculateCampaignStats(campaignId: string) {
   return calculatedStats;
 }
 
-// Helper function to format campaign response
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function formatCampaignResponse(campaign: any) {
   console.log(`Formatting campaign response for campaign ${campaign.id}`);
   const stats = await calculateCampaignStats(campaign.id);
@@ -54,6 +54,7 @@ async function formatCampaignResponse(campaign: any) {
   return {
     ...campaign,
     stats,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     prospects: campaign.prospects?.map((prospect: any) => ({
       ...prospect,
       status: prospect.status || 'PENDING_VALIDATION'
@@ -229,7 +230,7 @@ const campaignSchema = z.object({
 });
 
 // GET - Fetch all campaigns
-export async function GET(req: Request) {
+export async function GET() {
   console.log('GET /api/campaigns - Fetching campaigns');
   try {
     const session = await getServerSession(authOptions);
@@ -276,7 +277,7 @@ export async function POST(req: Request) {
 
     // Rate limiting check...
     console.log('Checking rate limit...');
-    const rateLimitResult = await rateLimit(session.user.id, 'create_campaign');
+    const rateLimitResult = await rateLimit(session.user.id as string, 'create_campaign');
     if (!rateLimitResult.success) {
       console.log('Rate limit exceeded:', rateLimitResult);
       return NextResponse.json({
@@ -370,9 +371,9 @@ export async function POST(req: Request) {
               prospect,
               validatedData.targetCompany,
               {
-                careerGoal: session.user.careerGoal,
-                industry: session.user.industry,
-                targetRoles: session.user.targetRoles
+                careerGoal: session.user.careerGoal as 'job' | 'internship',
+                industry: session.user.industry || '',
+                targetRoles: session.user.targetRoles || []
               }
             );
             console.log(validationResult)

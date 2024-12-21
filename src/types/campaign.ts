@@ -45,12 +45,16 @@ export interface CampaignFormData {
       score: number;
       reasons: string[];
     };
-    message?: {
-      text: string;
+    message: {
+      message: {
+        text: string;
+        reasoning?: string;
+      };
       commonalities?: {
         description: string;
         key_points: string[];
       };
+      conversation_starters?: string[];
     };
     nextActionAt?: string;
     createdAt: string;
@@ -71,6 +75,7 @@ export interface CampaignFormData {
   export interface ProspectAction {
     type: 'approve' | 'reject' | 'updateMessage' | 'sendConnection' | 'sendMessage';
     prospectId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any;
   }
   

@@ -20,16 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { UserPreferences } from '@/types/user';
 
 const INDUSTRIES = [
   { id: 'tech', name: 'Technology' },
@@ -91,7 +84,6 @@ export default function OnboardingPage() {
     } else {
       try {
         setIsLoading(true);
-        const { linkedinUsernameConfirm, ...submitData } = formData;
         console.log('Sending form data:', formData);
         console.log('Current session before update:', session);
   
@@ -154,7 +146,7 @@ export default function OnboardingPage() {
         <CardContent>
           {currentStep === 1 && (
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold">What's your career goal?</h2>
+              <h2 className="text-xl font-semibold">What&apos;s your career goal?</h2>
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   variant={formData.careerGoal === 'job' ? 'default' : 'outline'}

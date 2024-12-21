@@ -3,7 +3,6 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,7 +15,6 @@ import { Loader2 } from 'lucide-react';
 
 export default function SignupPage() {
   const { data: session, update } = useSession();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

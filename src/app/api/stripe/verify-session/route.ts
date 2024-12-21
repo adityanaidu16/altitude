@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { PlanType } from '@prisma/client';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 
 const PLAN_PRICE_MAP = {
   'price_1QUb8nRssdqzvr6AS6dtV3I5': PlanType.PLUS,

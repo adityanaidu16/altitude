@@ -37,7 +37,7 @@ export default function PrivacyPolicy() {
                 <a href="#security" className="text-gray-600 hover:text-gray-900">4. Data Security</a>
                 <a href="#rights" className="text-gray-600 hover:text-gray-900">5. Your Rights and Choices</a>
                 <a href="#cookies" className="text-gray-600 hover:text-gray-900">6. Cookies</a>
-                <a href="#children" className="text-gray-600 hover:text-gray-900">7. Children's Privacy</a>
+                <a href="#children" className="text-gray-600 hover:text-gray-900">7. Children&apos;s Privacy</a>
                 <a href="#changes" className="text-gray-600 hover:text-gray-900">8. Changes to Policy</a>
                 <a href="#international" className="text-gray-600 hover:text-gray-900">9. International Transfers</a>
                 <a href="#contact" className="text-gray-600 hover:text-gray-900">10. Contact Us</a>
@@ -165,7 +165,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section id="children" className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">7. Children's Privacy</h2>
+              <h2 className="text-2xl font-bold text-gray-900">7. Children&apos;s Privacy</h2>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
                 <p className="text-gray-700 leading-relaxed">
                   Our Service is not directed to children under 13. We do not knowingly collect
@@ -185,7 +185,7 @@ export default function PrivacyPolicy() {
                 </p>
                 <ul className="list-disc pl-6 space-y-2 text-gray-600">
                   <li>Posting the new Privacy Policy on this page</li>
-                  <li>Updating the "Last updated" date at the top of this policy</li>
+                  <li>Updating the &quot;Last updated&quot; date at the top of this policy</li>
                   <li>Sending an email notification for significant changes</li>
                 </ul>
               </div>

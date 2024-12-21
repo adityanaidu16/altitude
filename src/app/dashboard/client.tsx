@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from "framer-motion";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
+import { Prospect } from "@/types/campaign"
 
 interface Campaign {
   id: string;
@@ -25,23 +27,6 @@ interface Campaign {
   targetCompany: string;
   status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'FAILED';
   prospects: Prospect[];
-}
-
-interface Prospect {
-  id: string;
-  name: string;
-  position: string;
-  company: string;
-  status: string;
-  linkedinUrl: string;
-  message?: {
-    text: string;
-    commonalities?: {
-      description: string;
-      key_points: string[];
-    };
-    conversation_starters?: string[];
-  };
 }
 
 interface DashboardClientProps {
@@ -67,9 +52,10 @@ export default function DashboardClient({
   stats: initialStats,
   user
 }: DashboardClientProps) {
-  const [stats, setStats] = useState(initialStats);
+  const [stats] = useState(initialStats);
   const [activeTab, setActiveTab] = useState('campaigns');
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const checkPlanStatus = async () => {
@@ -99,25 +85,6 @@ export default function DashboardClient({
     // Check plan status on component mount
     checkPlanStatus();
   }, []);
-
-  const handleError = (error: Error) => {
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: "destructive",
-    });
-  };
-
-  const refreshStats = async () => {
-    try {
-      const response = await fetch('/api/stats');
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      const newStats = await response.json();
-      setStats(newStats);
-    } catch (error) {
-      console.error('Failed to refresh stats:', error);
-    }
-  };
 
   // Get all prospects across all campaigns
   const allProspects = initialCampaigns.flatMap(campaign => 
@@ -258,18 +225,13 @@ export default function DashboardClient({
           
           <TabsContent value="campaigns">
             <CampaignManager 
-              initialCampaigns={initialCampaigns}
-              onError={handleError}
-              onStatsChange={refreshStats}
             />
           </TabsContent>
-          
           <TabsContent value="prospects">
-            <ProspectList 
-              initialProspects={allProspects}
-              onError={handleError}
-            />
-          </TabsContent>
+          <ProspectList 
+            initialProspects={allProspects as Prospect[]}
+          />
+        </TabsContent>
         </Tabs>
 
         {/* Upgrade CTA for free users */}

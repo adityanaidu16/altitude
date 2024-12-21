@@ -11,7 +11,6 @@ import {
   Users, 
   Bell,
   Play,
-  Pause,
   X,
   ArrowUpRight,
   Sparkles,
@@ -38,9 +37,13 @@ const staggerChildren = {
     }
   }
 };
-
 // Floating animation component
-const FloatingElement = ({ children, delay = 0, duration = 3, className = "" }) => (
+const FloatingElement = ({ children, delay = 0, duration = 3, className = "" }: {
+  children: React.ReactNode;
+  delay?: number;
+  duration?: number; 
+  className?: string;
+}) => (
   <motion.div
     className={className}
     animate={{
@@ -60,7 +63,7 @@ const FloatingElement = ({ children, delay = 0, duration = 3, className = "" }) 
 );
 
 // Video Modal Component
-const VideoModal = ({ isOpen, onClose }) => (
+const VideoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => (
   <AnimatePresence>
     {isOpen && (
       <motion.div
@@ -214,13 +217,13 @@ const AnimatedTestimonialCard = ({
           ))}
         </div>
         <p className="text-gray-600 mb-6 italic relative">
-          "{quote}"
+          &quot;{quote}&quot;
           <motion.span
             className="absolute -left-4 -top-4 text-4xl text-gray-200"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            "
+            &quot;
           </motion.span>
         </p>
         <div className="flex items-center gap-4">
@@ -697,7 +700,7 @@ export default function LandingPage() {
           >
             <h2 className="text-3xl font-bold mb-4">Success Stories</h2>
             <p className="text-gray-600">
-              Join thousands of students who've transformed their career journey with Altitude
+              Join thousands of students who&apos;ve transformed their career journey with Altitude
             </p>
           </motion.div>
 

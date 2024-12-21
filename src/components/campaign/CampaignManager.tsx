@@ -6,45 +6,21 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   PlayCircle, 
-  PauseCircle, 
   UserCheck, 
   MessageSquare, 
   Users,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Edit,
-  Trash,
-  RefreshCw,
-  ExternalLink,
   SearchX,
-  ArrowUpRight,
   Loader2
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
@@ -104,7 +80,6 @@ export default function CampaignManager() {
   const [loading, setLoading] = useState(true);
   const [showNewCampaign, setShowNewCampaign] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [activeTab, setActiveTab] = useState('all');
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -144,11 +119,11 @@ export default function CampaignManager() {
       const data = await response.json();
       setCampaigns(data);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch campaigns",
-        variant: "destructive"
-      });
+        toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "Failed to fetch campaigns",
+            variant: "destructive"
+        });
     } finally {
       setLoading(false);
     }
@@ -172,7 +147,13 @@ export default function CampaignManager() {
         const campaign = await response.json();
         setCampaigns([...campaigns, campaign]);
         setShowNewCampaign(false);
-        setFormData({ name: '', targetCompany: '', dailyLimit: 25 });
+        setFormData({ 
+            name: '', 
+            targetCompany: '', 
+            dailyLimit: 25,
+            autoApprove: false,
+            autoMessage: false 
+        });
         
         toast({
             title: "Success",
@@ -188,7 +169,8 @@ export default function CampaignManager() {
         setIsCreating(false);  // Reset loading state
     }
   };
-
+    
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleProspectAction = async (action: string, prospectId: string, data?: any) => {
     try {
       let response;
@@ -256,7 +238,7 @@ export default function CampaignManager() {
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to ${action} prospect: ${error.message}`,
+        description: `Failed to ${action} prospect: ${(error as Error).message}`,
         variant: "destructive"
       });
     }
@@ -280,26 +262,11 @@ export default function CampaignManager() {
         description: `Campaign ${action}d successfully`,
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to ${action} campaign`,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const filteredProspects = (prospects: Prospect[]) => {
-    switch (activeTab) {
-      case 'pending':
-        return prospects.filter(p => p.status === 'PENDING_VALIDATION');
-      case 'connecting':
-        return prospects.filter(p => ['CONNECTION_PENDING', 'CONNECTION_SENT'].includes(p.status));
-      case 'messaging':
-        return prospects.filter(p => ['CONNECTION_ACCEPTED', 'MESSAGE_QUEUED'].includes(p.status));
-      case 'completed':
-        return prospects.filter(p => p.status === 'MESSAGE_SENT');
-      default:
-        return prospects;
+        toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : `Failed to ${action} campaign`,
+            variant: "destructive"
+        });
     }
   };
 
@@ -333,19 +300,18 @@ export default function CampaignManager() {
                 <TabsContent value="pipeline" className="h-[calc(80vh-120px)]">
                 <PipelineView
                     campaignId={selectedCampaign.id}
-                    prospects={selectedCampaign.prospects}
+                    prospects={selectedCampaign.prospects as unknown as import("@/types/campaign").Prospect[]}
                     onProspectAction={handleProspectAction}
                     onProspectsUpdate={(updatedProspects) => {
                     setSelectedCampaign({
                         ...selectedCampaign,
-                        prospects: updatedProspects
+                        prospects: updatedProspects as unknown as Prospect[]
                     });
-                    
                     // Also update the campaigns list if needed
-                    setCampaigns(prevCampaigns => 
+                    setCampaigns(prevCampaigns =>
                         prevCampaigns.map(campaign => 
                         campaign.id === selectedCampaign.id 
-                            ? { ...campaign, prospects: updatedProspects }
+                            ? { ...campaign, prospects: updatedProspects as unknown as Prospect[] }
                             : campaign
                         )
                     );
@@ -545,7 +511,7 @@ export default function CampaignManager() {
 }
 
 // Helper Components
-function StatsCard({ title, value, change, icon }: {
+function StatsCard({ title, value, icon }: {
   title: string;
   value: number;
   icon: React.ReactNode;

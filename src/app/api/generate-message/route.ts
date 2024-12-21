@@ -3,30 +3,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "../auth/[...nextauth]/auth";
 import { z } from "zod";
 import { Session } from 'next-auth';
-import { PlanType } from '@prisma/client';
-
-// Type definitions
-interface FlaskResponse {
-  message: {
-    commonalities: {
-      description: string;
-      key_points: string[];
-    };
-    message: {
-      text: string;
-      reasoning: string;
-    };
-    conversation_starters: string[];
-  };
-  profileInfo: {
-    name: string;
-    company: string;
-    position: string;
-  };
-}
 
 // Input validation schema
 const requestSchema = z.object({
@@ -41,6 +20,7 @@ const requestSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const session = await getServerSession(authOptions as any) as Session;
     if (!session?.user?.email) {
       return NextResponse.json(

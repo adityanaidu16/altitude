@@ -11,6 +11,7 @@ export const config = {
   },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function processSubscriptionChange(subscription: any) {
   console.log('Processing subscription change:', subscription.id);
   const user = await prisma.user.findFirst({
@@ -50,6 +51,7 @@ async function processSubscriptionChange(subscription: any) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function handleInvoicePaid(invoice: any) {
   const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
   const user = await prisma.user.findFirst({
@@ -69,6 +71,7 @@ async function handleInvoicePaid(invoice: any) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function handleInvoiceFailed(invoice: any) {
   const user = await prisma.user.findFirst({
     where: { stripeCustomerId: invoice.customer }
@@ -84,7 +87,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.text();
     const headersList = headers();
-    const signature = headersList.get('stripe-signature');
+    const signature = (await headersList).get('stripe-signature');
 
     if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
       console.error('Missing signature or webhook secret');
@@ -102,7 +105,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error('Error verifying webhook:', err);
       return NextResponse.json(
-        { error: `Webhook verification failed: ${err.message}` },
+        { error: `Webhook verification failed: ${(err as Error).message}` },
         { status: 400 }
       );
     }

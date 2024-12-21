@@ -26,14 +26,13 @@ import {
 } from '@/components/ui/tooltip';
 import {
   CheckCircle,
-  XCircle,
   MessageSquare,
   ExternalLink,
   UserPlus,
   Loader2,
 } from 'lucide-react';
 import { Prospect, ProspectStatus } from '@/types/campaign';
-import { ProgressDialog } from './ProgressDialog';
+import { CardProgress } from './CardProgress';
 import { useToast } from '@/hooks/use-toast';
 
 interface Column {
@@ -86,6 +85,7 @@ const columns: Column[] = [
 interface PipelineViewProps {
   campaignId: string;
   prospects: Prospect[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onProspectAction: (prospectId: string, action: string, data?: any) => Promise<void>;
   onProspectsUpdate: (updatedProspects: Prospect[]) => void;
   onStatsUpdate: () => void;
@@ -101,12 +101,11 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
   const [message, setMessage] = useState('');
   const [isActionInProgress, setIsActionInProgress] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
-  const [progressTitle, setProgressTitle] = useState('');
-  const [progressStages, setProgressStages] = useState<{ name: string; duration: number }[]>([]);
+  const [progressStages, setProgressStages] = useState<{ [key: string]: { name: string; duration: number; }[] }>({});
 
   const { toast } = useToast();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onDragEnd = async (result: any) => {
     if (!result.destination) return;
     const { draggableId, source, destination } = result;
@@ -321,14 +320,14 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
   const handleGenerateMessage = async (prospectId: string) => {
     setIsActionInProgress(true);
     setSelectedProspectId(prospectId);
-    setProgressTitle('Generating Message');
-    setProgressStages([
-      { name: 'Fetching profile data', duration: 3000 },
-      { name: 'Analyzing profile information', duration: 2000 },
-      { name: 'Generating personalized message', duration: 3000 },
-      { name: 'Saving message', duration: 1000 }
-    ]);
-    setShowProgress(true);
+    setProgressStages({
+      [prospectId]: [
+        { name: 'Updating connection status', duration: 1000 },
+        { name: 'Fetching profile data', duration: 3000 },
+        { name: 'Generating personalized message', duration: 4000 },
+        { name: 'Saving changes', duration: 1000 }
+      ]
+    });
   
     try {
       // Rest of your existing code...
@@ -391,21 +390,25 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
     } finally {
       setIsActionInProgress(false);
       setSelectedProspectId(null);
-      setShowProgress(false);
+      setProgressStages(prev => {
+        const next = { ...prev };
+        delete next[prospectId];
+        return next;
+      });
     }
   };
 
   const handleMarkAsConnected = async (prospectId: string) => {
     setIsActionInProgress(true);
     setSelectedProspectId(prospectId);
-    setProgressTitle('Updating Connection Status');
-    setProgressStages([
-      { name: 'Updating connection status', duration: 1000 },
-      { name: 'Fetching profile data', duration: 3000 },
-      { name: 'Generating personalized message', duration: 4000 },
-      { name: 'Saving changes', duration: 1000 }
-    ]);
-    setShowProgress(true);
+    setProgressStages({
+      [prospectId]: [
+        { name: 'Updating connection status', duration: 1000 },
+        { name: 'Fetching profile data', duration: 3000 },
+        { name: 'Generating personalized message', duration: 4000 },
+        { name: 'Saving changes', duration: 1000 }
+      ]
+    });
     
     try {
       // Rest of your existing code...
@@ -484,7 +487,11 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
     } finally {
       setIsActionInProgress(false);
       setSelectedProspectId(null);
-      setShowProgress(false);
+      setProgressStages(prev => {
+        const next = { ...prev };
+        delete next[prospectId];
+        return next;
+      });
     }
   };
 
@@ -600,7 +607,7 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              navigator.clipboard.writeText(prospect.message.message.text);
+                              navigator.clipboard.writeText(prospect?.message?.message?.text as string);
                               toast({
                                 title: "Copied",
                                 description: "Message copied to clipboard",
@@ -622,9 +629,9 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
                       <div className="space-y-2">
                         <Label>Commonalities</Label>
                         <div className="rounded-md bg-muted p-4 space-y-2">
-                          <p className="text-sm">{prospect.message.commonalities.description}</p>
+                          <p className="text-sm">{prospect?.message?.commonalities?.description as string}</p>
                           <ul className="list-disc pl-4 space-y-1">
-                            {prospect.message.commonalities.key_points.map((point, index) => (
+                            {prospect?.message?.commonalities?.key_points.map((point, index) => (
                               <li key={index} className="text-sm text-muted-foreground">
                                 {point}
                               </li>
@@ -638,7 +645,7 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
                         <Label>Conversation Starters</Label>
                         <div className="rounded-md bg-muted p-4">
                           <ul className="list-disc pl-4 space-y-1">
-                            {prospect.message.conversation_starters.map((starter, index) => (
+                            {prospect.message?.conversation_starters?.map((starter, index) => (
                               <li key={index} className="text-sm text-muted-foreground">
                                 {starter}
                               </li>
@@ -777,20 +784,35 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
                                 </div>
 
                                 {expandedProspect === prospect.id && (
-                                  <div className="pt-2 space-y-2">
-                                    {prospect.message && (
-                                      <div className="text-xs">
-                                        <p className="text-muted-foreground">
-                                          {prospect.message.text}
-                                        </p>
-                                      </div>
-                                    )}
-                                    
-                                    <div className="flex justify-start space-x-2">
-                                      {renderProspectActions(prospect)}
-                                    </div>
-                                  </div>
-                                )}
+  <div className="pt-2 space-y-2">
+    {progressStages[prospect.id] ? (
+      <CardProgress 
+        stages={progressStages[prospect.id]}
+        onComplete={() => {
+          setProgressStages(prev => {
+            const next = { ...prev };
+            delete next[prospect.id];
+            return next;
+          });
+        }}
+      />
+    ) : (
+      <>
+        {prospect.message && (
+          <div className="text-xs">
+            <p className="text-muted-foreground">
+              {prospect.message.message.text}
+            </p>
+          </div>
+        )}
+        
+        <div className="flex justify-start space-x-2">
+          {renderProspectActions(prospect)}
+        </div>
+      </>
+    )}
+  </div>
+)}
 
                                 <Button
                                   variant="ghost"
@@ -919,11 +941,6 @@ export function PipelineView({ campaignId, prospects, onProspectAction, onProspe
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <ProgressDialog 
-        open={showProgress}
-        title={progressTitle}
-        stages={progressStages}
-      />
     </DragDropContext>
   );
 }

@@ -1,7 +1,7 @@
 // app/payment/success/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -10,13 +10,13 @@ import { Loader2 } from 'lucide-react';
 const MAX_ATTEMPTS = 5;
 const getBackoffDelay = (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 10000);
 
-export default function PaymentSuccessPage() {
+// Separate component for payment verification logic
+function PaymentVerification() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status, update } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
-  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -57,11 +57,9 @@ export default function PaymentSuccessPage() {
           console.log('Payment verified successfully');
           console.log('Updating session...');
           
-          // Force session refresh
           await update();
           console.log('Session updated');
           
-          // Add a small delay before redirecting
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           window.location.href = '/dashboard';
@@ -78,7 +76,6 @@ export default function PaymentSuccessPage() {
           return;
         }
 
-        // If not successful, retry
         if (mounted && attempts < MAX_ATTEMPTS) {
           const delay = getBackoffDelay(attempts);
           console.log(`Verification not successful, retrying in ${delay}ms`);
@@ -111,37 +108,60 @@ export default function PaymentSuccessPage() {
   }, [session, status, searchParams, attempts, update, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg text-center">
-        {error ? (
-          <>
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Verification Notice</h1>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <div className="mt-4 text-sm text-gray-500">
-              Order Reference: {searchParams.get('session_id')}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="mb-6">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
-              Confirming Your Subscription
-            </h1>
-            <p className="text-gray-600 mb-4">
-              {attempts > 0 
-                ? "We're still processing your payment. This may take a moment..."
-                : "Please wait while we confirm your subscription."}
+    <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg text-center">
+      {error ? (
+        <>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Verification Notice</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="mt-4 text-sm text-gray-500">
+            Order Reference: {searchParams.get('session_id')}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mb-6">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Confirming Your Subscription
+          </h1>
+          <p className="text-gray-600 mb-4">
+            {attempts > 0 
+              ? "We're still processing your payment. This may take a moment..."
+              : "Please wait while we confirm your subscription."}
+          </p>
+          {attempts > 0 && (
+            <p className="text-sm text-gray-500">
+              Verification attempt {attempts} of {MAX_ATTEMPTS}
             </p>
-            {attempts > 0 && (
-              <p className="text-sm text-gray-500">
-                Verification attempt {attempts} of {MAX_ATTEMPTS}
-              </p>
-            )}
-          </>
-        )}
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// Loading component
+function LoadingState() {
+  return (
+    <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg text-center">
+      <div className="mb-6">
+        <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
       </div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">
+        Loading...
+      </h1>
+    </div>
+  );
+}
+
+// Main page component
+export default function PaymentSuccessPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <Suspense fallback={<LoadingState />}>
+        <PaymentVerification />
+      </Suspense>
     </div>
   );
 }

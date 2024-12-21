@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,27 +22,9 @@ const PaymentManager = () => {
   const { data: session, update } = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [subscription, setSubscription] = useState(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-
-  useEffect(() => {
-    if (session?.user?.stripeSubscriptionId) {
-      fetchSubscriptionDetails();
-    }
-  }, [session]);
-
-  const fetchSubscriptionDetails = async () => {
-    try {
-      const response = await fetch('/api/stripe/subscription-details');
-      const data = await response.json();
-      setSubscription(data.subscription);
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-    }
-  };
-
-  const handleUpgrade = async (planType) => {
+  const handleUpgrade = async (planType: string) => {
     setLoading(true);
     try {
       const response = await fetch('/api/stripe/create-checkout', {
@@ -62,9 +44,10 @@ const PaymentManager = () => {
         window.location.href = url;
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to initiate upgrade";
       toast({
         title: "Error",
-        description: "Failed to initiate upgrade",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -82,7 +65,7 @@ const PaymentManager = () => {
       const data = await response.json();
       
       if (response.ok) {
-        await update(); // Update session data
+        await update();
         toast({
           title: "Subscription Cancelled",
           description: `Your subscription will end on ${new Date(data.cancelDate).toLocaleDateString()}`,
@@ -92,9 +75,10 @@ const PaymentManager = () => {
         throw new Error(data.error);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to cancel subscription";
       toast({
         title: "Error",
-        description: "Failed to cancel subscription",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -120,7 +104,7 @@ const PaymentManager = () => {
             {session.user.plan === 'FREE' ? (
               'Free Plan'
             ) : (
-            <>
+              <>
                 {session?.user?.plan} Plan
                 {session?.user?.pendingDowngrade && session?.user?.planEndDate && (
                   <span className="text-amber-600 ml-2">
@@ -175,7 +159,7 @@ const PaymentManager = () => {
                 <div className="space-y-4">
                   <p>Are you sure you want to cancel your subscription?</p>
                   <p className="text-sm text-gray-500">
-                    You'll continue to have access to your current plan until the end of your billing period.
+                    You&apos;ll continue to have access to your current plan until the end of your billing period.
                   </p>
                   <div className="flex justify-end space-x-2">
                     <Button

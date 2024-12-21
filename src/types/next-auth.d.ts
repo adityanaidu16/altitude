@@ -1,5 +1,4 @@
 // types/next-auth.d.ts
-import { DefaultSession } from "next-auth";
 import { PlanType } from '@prisma/client'
 
 declare module "next-auth" {
@@ -38,7 +37,7 @@ declare module "next-auth" {
   }
 
   interface User {
-    id?: String
+    id?: string
     plan?: PlanType;
     planStartDate?: Date;
     planEndDate?: Date | null;

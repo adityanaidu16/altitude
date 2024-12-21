@@ -3,7 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Link } from 'lucide-react';
+import Image from 'next/image'
 
 const SignIn = () => {
   return (
@@ -11,7 +11,7 @@ const SignIn = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto w-16 h-16 mb-2">
-            <img src="/altitude.png" alt="Altitude logo" className="w-full h-full" />
+            <Image src="/altitude.png" alt="Altitude logo" className="w-full h-full" />
           </div>
           <CardTitle className="text-2xl font-bold">Welcome to Altitude</CardTitle>
           <CardDescription className="text-slate-600">

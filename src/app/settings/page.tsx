@@ -48,8 +48,8 @@ export default function SettingsPage() {
 
   const isLoadingInitialData = status === 'loading' || !isInitialized;
 
-  // Your form change handlers
-  const handleInputChange = (field: string, value: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

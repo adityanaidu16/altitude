@@ -1,21 +1,21 @@
 // app/api/campaigns/[id]/[action]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { CampaignStatus } from '@prisma/client';
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string; action: string } }
-) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, action } = params;
+    // Extract id and action from URL
+    const urlParts = req.url.split('/');
+    const id = urlParts[urlParts.length - 2];
+    const action = urlParts[urlParts.length - 1];
 
     // Verify campaign exists and belongs to user
     const campaign = await prisma.campaign.findFirst({
@@ -33,7 +33,6 @@ export async function POST(
     }
 
     let newStatus: CampaignStatus;
-    
     // Determine new status based on action
     switch (action.toLowerCase()) {
       case 'pause':
@@ -80,9 +79,11 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error(`Error ${params.action}ing campaign:`, error);
+    const urlParts = req.url.split('/');
+    const action = urlParts[urlParts.length - 1];
+    console.error(`Error ${action}ing campaign:`, error);
     return NextResponse.json(
-      { error: `Failed to ${params.action} campaign` },
+      { error: `Failed to ${action} campaign` },
       { status: 500 }
     );
   }

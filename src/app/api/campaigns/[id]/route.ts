@@ -2,23 +2,28 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '../../auth/[...nextauth]/auth';
 import { CampaignStatus } from '@prisma/client';
 
+// Helper function to extract campaign ID from URL pattern
+function extractCampaignId(request: Request): string {
+  const urlParts = new URL(request.url).pathname.split('/');
+  return urlParts[urlParts.length - 1];
+}
+
 // GET - Fetch single campaign
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const campaignId = extractCampaignId(request);
+    
     const campaign = await prisma.campaign.findFirst({
       where: {
-        id: params.id,
+        id: campaignId,
         userId: session.user.id
       },
       include: {
@@ -46,22 +51,20 @@ export async function GET(
 }
 
 // PATCH - Update campaign
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { status, messageTemplate, dailyLimit, autoApprove, autoMessage } = body;
+    const campaignId = extractCampaignId(request);
+    const body = await request.json();
+    const { status, messageTemplate, autoApprove } = body;
 
     const campaign = await prisma.campaign.findFirst({
       where: {
-        id: params.id,
+        id: campaignId,
         userId: session.user.id
       }
     });
@@ -74,13 +77,11 @@ export async function PATCH(
     }
 
     const updatedCampaign = await prisma.campaign.update({
-      where: { id: params.id },
+      where: { id: campaignId },
       data: {
         status: status as CampaignStatus,
         messageTemplate,
-        dailyLimit,
         autoApprove,
-        autoMessage,
         updatedAt: new Date()
       }
     });
@@ -96,19 +97,18 @@ export async function PATCH(
 }
 
 // DELETE - Delete campaign
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const campaignId = extractCampaignId(request);
+
     const campaign = await prisma.campaign.findFirst({
       where: {
-        id: params.id,
+        id: campaignId,
         userId: session.user.id
       }
     });
@@ -122,10 +122,10 @@ export async function DELETE(
 
     await prisma.$transaction([
       prisma.prospect.deleteMany({
-        where: { campaignId: params.id }
+        where: { campaignId }
       }),
       prisma.campaign.delete({
-        where: { id: params.id }
+        where: { id: campaignId }
       })
     ]);
 

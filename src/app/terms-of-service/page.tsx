@@ -48,7 +48,7 @@ export default function TermsOfService() {
             <section id="terms" className="space-y-4">
               <h2 className="text-2xl font-bold text-gray-900">1. Terms</h2>
               <p className="text-gray-600 leading-relaxed">
-                By accessing and using Altitude ("the Service"), you agree to be bound by these Terms of Service ("Terms"). 
+                By accessing and using Altitude (&quot;the Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). 
                 If you disagree with any part of the terms, you may not access the Service.
               </p>
             </section>
@@ -56,7 +56,7 @@ export default function TermsOfService() {
             <section id="acceptable-use" className="space-y-4">
               <h2 className="text-2xl font-bold text-gray-900">2. Acceptable Use</h2>
               <p className="text-gray-600 leading-relaxed">
-                You agree to use the Service in accordance with LinkedIn's terms of service and professional community guidelines.
+                You agree to use the Service in accordance with LinkedIn&apos;s terms of service and professional community guidelines.
                 The following actions are strictly prohibited:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600">
@@ -64,7 +64,7 @@ export default function TermsOfService() {
                 <li>Automated mass connection requests</li>
                 <li>Scraping or collecting data beyond permitted usage</li>
                 <li>Using the Service to send harmful or malicious content</li>
-                <li>Attempting to manipulate or abuse the Service's features</li>
+                <li>Attempting to manipulate or abuse the Service&apos;s features</li>
               </ul>
             </section>
 
@@ -112,7 +112,7 @@ export default function TermsOfService() {
               <h2 className="text-2xl font-bold text-gray-900">7. Changes to Terms</h2>
               <p className="text-gray-600 leading-relaxed">
                 We reserve the right to modify or replace these Terms at any time. If a revision is material,
-                we will provide at least 30 days' notice prior to any new terms taking effect.
+                we will provide at least 30 days&apos; notice prior to any new terms taking effect.
               </p>
             </section>
 

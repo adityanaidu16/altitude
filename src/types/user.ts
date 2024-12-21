@@ -17,4 +17,5 @@ export interface UserPreferences {
   industry: string;
   targetRoles: string[];
   linkedinUsername: string;
+  linkedinUsernameConfirm: string;
 }
