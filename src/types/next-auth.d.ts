@@ -3,6 +3,31 @@ import { DefaultSession } from "next-auth";
 import { PlanType } from '@prisma/client'
 
 declare module "next-auth" {
+  interface Prospect {
+    id: string;
+    name: string;
+    position: string;
+    company: string;
+    linkedinUrl: string;
+    publicId: string;
+    status: ProspectStatus;
+    connectionId?: string;
+    message?: {
+      text: string;
+      commonalities?: {
+        description: string;
+        key_points: string[];
+      };
+    };
+    validationData?: {
+      score: number;
+      reasons: string[];
+    };
+    nextActionAt?: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+  
   interface Session {
     user: User & {
       email: string
@@ -13,6 +38,7 @@ declare module "next-auth" {
   }
 
   interface User {
+    id?: String
     plan?: PlanType;
     planStartDate?: Date;
     planEndDate?: Date | null;
@@ -21,6 +47,7 @@ declare module "next-auth" {
     careerGoal?: string | null;
     industry?: string | null;
     targetRoles?: string[];
+    pendingDowngrade?: boolean;
     linkedinProfile?: {
       basic_info?: {
         name: string;

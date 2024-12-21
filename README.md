@@ -150,3 +150,35 @@ flowchart TB
 ## 📄 License
 
 [Type of License]
+
+## BUGS
+
+- Sign in sometimes doesn't scrape profile [In progress - Might be getting IP blocked] [X]
+- Need to reload to see "View Message" [X]
+- Implement Drag and Drop properly [X]
+- Implement auto prospect validation [X]
+- Test if other roles work (besides SWE) [X]
+- Implement dashboard metrics/stats properly [X]
+- Implement usage tracking and plan adherence
+- Make every campaign find more leads [X]
+- Remove Leads model from schema [X]
+- Remove other redundant models/apis [X]
+- Ensure settings pages work properly [X]
+- Ensure upgrade plan works (webhook not currently used) [X]
+- Add a confirm linkedin username (and note that this cannot be changed after) during sign up [x]
+
+- Is automated billing setup? [X]
+- Add more compliance things (ToS, payment w/ stripe, etc) [X]
+- Optimize landing page for conversion (demo video) [X]
+- Add rotating logins (.env) [X]
+- Create Build
+- Deploy
+
+# PLANS
+|     Free      |     Plus      |      Pro      |
+| ------------- | ------------- | ------------- |
+| $0            | $9/month      | $20/month     |
+| 2 campaigns/month  | 20 campaigns/month  | Unlimited campaigns  |
+| Up to 15 prospects per campaign  | Up to 50 prospects per campaign  | Up to 50 prospects per campaign  |
+| Basic prospect validation  | Advanced prospect validation  | Advanced prospect validation  |
+| Basic message personalization  | Advanced message personalization  | Advanced message personalization  |

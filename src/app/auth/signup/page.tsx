@@ -80,26 +80,29 @@ export default function SignupPage() {
     try {
       setLoading(true);
       setError(null);
-
+  
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId: 'price_1QUb8nRssdqzvr6AS6dtV3I5', // PLUS plan price ID
+        }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
       }
-
+  
       const data = await response.json();
-      
+  
       if (!data.url) {
         throw new Error('No checkout URL received');
       }
-
+  
       window.location.href = data.url;
     } catch (error) {
       console.error('Error initiating checkout:', error);
@@ -108,6 +111,42 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+  
+  const handleProPlan = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+  
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId: 'price_1QXWpzRssdqzvr6AD9HvQdKI', // PRO plan price ID
+        }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
+      }
+  
+      const data = await response.json();
+  
+      if (!data.url) {
+        throw new Error('No checkout URL received');
+      }
+  
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Error initiating checkout:', error);
+      setError(error instanceof Error ? error.message : 'Failed to initiate checkout');
+    } finally {
+      setLoading(false);
+    }
+  };  
 
   // Early return if no session
   if (!session) return null;
@@ -129,7 +168,7 @@ export default function SignupPage() {
           )}
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
           <Card>
             <CardHeader>
               <CardTitle>Free Plan</CardTitle>
@@ -137,9 +176,10 @@ export default function SignupPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <ul className="space-y-2">
-                <li>✓ 25 message generations per month</li>
-                <li>✓ Basic analytics</li>
-                <li>✓ Standard support</li>
+                <li>✓ 2 campaigns per month</li>
+                <li>✓ Up to 15 prospects per campaign</li>
+                <li>✓ Basic prospect validation</li>
+                <li>✓ Personalized messages</li>
               </ul>
               <Button 
                 className="w-full" 
@@ -166,10 +206,10 @@ export default function SignupPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <ul className="space-y-2">
-                <li>✓ Unlimited message generations</li>
-                <li>✓ Advanced analytics</li>
-                <li>✓ Priority support</li>
-                <li>✓ Custom templates</li>
+                <li>✓ 20 campaigns per month</li>
+                <li>✓ Up to 50 prospects per campaign</li>
+                <li>✓ Advanced prospect validation</li>
+                <li>✓ Advanced personalized messages</li>
               </ul>
               <Button 
                 className="w-full"
@@ -183,7 +223,37 @@ export default function SignupPage() {
                     Processing...
                   </span>
                 ) : (
-                  'Select Plus Plan ($10/month)'
+                  'Select Plus Plan ($9/month)'
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pro Plan</CardTitle>
+              <CardDescription>To make that dream role a reality</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2">
+                <li>✓ Unlimited campaigns</li>
+                <li>✓ Up to 50 prospects per campaign</li>
+                <li>✓ Advanced prospect validation</li>
+                <li>✓ Advanced personalized messages</li>
+              </ul>
+              <Button 
+                className="w-full"
+                onClick={handleProPlan}
+                disabled={loading}
+                style={{ backgroundColor: '#031b1d' }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </span>
+                ) : (
+                  'Select Pro Plan ($19/month)'
                 )}
               </Button>
             </CardContent>

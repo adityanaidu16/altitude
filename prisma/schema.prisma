@@ -11,6 +11,7 @@ generator client {
 enum PlanType {
   FREE
   PLUS
+  PRO
 }
 
 enum CampaignStatus {
@@ -33,113 +34,75 @@ enum ProspectStatus {
 }
 
 model User {
-  id               String   @id @default(cuid())
-  name             String?
-  email            String   @unique
-  linkedinUsername String?  @unique
-  linkedinProfile  Json?    // Store the processed LinkedIn profile data
-  plan            PlanType
-  planStartDate   DateTime @default(now())
-  planEndDate     DateTime?
-  needs_subscription Boolean @default(true)
-  stripeCustomerId     String?    @unique
-  stripeSubscriptionId String?    @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  campaigns       Campaign[]
-  leads           Lead[]
-  careerGoal     String?
-  industry       String?
-  targetRoles    String[]
-  usageHistory    MonthlyUsage[]
-  deletedLeads    DeletedLead[]
+  id                   String         @id @default(cuid())
+  name                 String?
+  email                String         @unique
+  linkedinUsername     String?        @unique
+  linkedinProfile      Json? // Store the processed LinkedIn profile data
+  plan                 PlanType
+  planStartDate        DateTime       @default(now())
+  planEndDate          DateTime?
+  needs_subscription   Boolean        @default(true)
+  stripeCustomerId     String?        @unique
+  stripeSubscriptionId String?        @unique
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  campaigns            Campaign[]
+  careerGoal           String?
+  industry             String?
+  targetRoles          String[]
+  RateLimit            RateLimit[]
+  pendingDowngrade Boolean @default(false)
 }
 
-model Lead {
-  id          String   @id @default(cuid())
-  name        String
-  company     String
-  position    String
-  linkedinUrl String
-  status      String   @default("PENDING")
-  message     Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  lastProfileUpdate DateTime?
-  monthlyUsage MonthlyUsage @relation(fields: [usageId], references: [id])
-  usageId     String
+model RateLimit {
+  id        String   @id @default(cuid())
+  key       String // The rate limit key (e.g., "create_campaign:userId")
+  count     Int      @default(0)
+  timestamp DateTime @default(now())
+  userId    String // Link to user for per-user rate limiting
+  user      User     @relation(fields: [userId], references: [id])
 
-  @@index([userId, status])
-  @@index([usageId])
-}
-
-model DeletedLead {
-  id              String   @id @default(cuid())
-  originalLeadId  String
-  userId          String
-  monthlyUsageId  String
-  deletedAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id])
-  monthlyUsage    MonthlyUsage @relation(fields: [monthlyUsageId], references: [id])
-
+  @@unique([key, userId])
   @@index([userId])
-  @@index([monthlyUsageId])
-}
-
-model MonthlyUsage {
-  id          String   @id @default(cuid())
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  year        Int
-  month       Int
-  leadCount   Int      @default(0)
-  plan        PlanType
-  leads       Lead[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([userId, year, month])
-  @@index([userId, year, month])
-  deletedLeads    DeletedLead[]
+  @@index([timestamp])
 }
 
 model Campaign {
-  id            String        @id @default(cuid())
-  name          String
-  targetCompany String
-  status        CampaignStatus @default(ACTIVE)
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  prospects     Prospect[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  metadata      Json?         // Store campaign-specific settings
-  dailyLimit    Int          @default(25)  // LinkedIn daily connection limit
-  messageTemplate String?     // Default message template
-  
+  id              String        @id @default(cuid())
+  name            String
+  targetCompany   String
+  status          CampaignStatus @default(ACTIVE)
+  messageTemplate String?
+  metadata        Json?
+  autoApprove     Boolean       @default(false)
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  prospects       Prospect[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
   @@index([userId])
 }
 
 model Prospect {
-  id            String         @id @default(cuid())
-  name          String
-  position      String
-  company       String
-  linkedinUrl   String
-  publicId      String        // LinkedIn public ID
-  status        ProspectStatus @default(PENDING_VALIDATION)
-  campaignId    String
-  campaign      Campaign       @relation(fields: [campaignId], references: [id])
-  connectionId  String?       // LinkedIn connection ID after connected
-  message       Json?         // Stored message and commonalities
-  notes         String?
-  validationData Json?        // Store validation results
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  nextActionAt  DateTime?     // Scheduled time for next action
-  
+  id             String         @id @default(cuid())
+  name           String
+  position       String
+  company        String
+  linkedinUrl    String
+  publicId       String // LinkedIn public ID
+  status         ProspectStatus @default(PENDING_VALIDATION)
+  campaignId     String
+  campaign       Campaign       @relation(fields: [campaignId], references: [id])
+  connectionId   String? // LinkedIn connection ID after connected
+  message        Json? // Stored message and commonalities
+  notes          String?
+  validationData Json? // Store validation results
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  nextActionAt   DateTime? // Scheduled time for next action
+
   @@index([campaignId])
   @@index([status])
 }

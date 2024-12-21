@@ -6,6 +6,65 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import DashboardClient from "./client";
 
+async function getCampaignData(userId: string) {
+  const campaigns = await prisma.campaign.findMany({
+    where: { userId },
+    include: {
+      prospects: {
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          company: true,
+          status: true,
+          linkedinUrl: true,
+          message: true,
+          validationData: true,
+          nextActionAt: true,
+          createdAt: true,
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  return campaigns;
+}
+
+async function getDashboardStats(userId: string) {
+  const [campaignCount, prospectCount, connectedCount, messagedCount] = await Promise.all([
+    // Get total campaigns
+    prisma.campaign.count({
+      where: { userId }
+    }),
+    // Get total prospects
+    prisma.prospect.count({
+      where: {
+        campaign: { userId }
+      }
+    }),
+    // Get connected prospects
+    prisma.prospect.count({
+      where: {
+        campaign: { userId },
+        status: 'CONNECTION_ACCEPTED'
+      }
+    }),
+    // Get messaged prospects
+    prisma.prospect.count({
+      where: {
+        campaign: { userId },
+        status: 'MESSAGE_SENT'
+      }
+    })
+  ]);
+
+  return {
+    totalCampaigns: campaignCount,
+    totalProspects: prospectCount,
+    totalConnected: connectedCount,
+    messagesSent: messagedCount
+  };
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions as any) as Session;
@@ -19,45 +78,37 @@ export default async function DashboardPage() {
     where: {
       email: session.user.email,
     },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      plan: true,
+      pendingDowngrade: true,
+      planEndDate: true
+    }
   });
 
   if (!user) {
     redirect('/auth/signin');
   }
 
-  // Fetch leads for the user
-  const leads = await prisma.lead.findMany({
-    where: {
-      userId: user.id,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    select: {
-      id: true,
-      name: true,
-      company: true,
-      position: true,
-      status: true,
-      linkedinUrl: true,
-      message: true,
-    },
-  });
-
-  // Also fetch statistics
-  const stats = await prisma.$transaction([
-    prisma.lead.count({ where: { userId: user.id } }),
-    prisma.lead.count({ where: { userId: user.id, status: 'Messaged' } }),
-    prisma.lead.count({ where: { userId: user.id, status: 'Responded' } }),
+  // Fetch all necessary data
+  const [campaigns, stats] = await Promise.all([
+    getCampaignData(user.id),
+    getDashboardStats(user.id)
   ]);
 
   return (
     <DashboardClient 
-      initialLeads={leads} 
-      stats={{
-        totalLeads: stats[0],
-        messagesSent: stats[1],
-        responsesReceived: stats[2]
+      initialCampaigns={campaigns} 
+      stats={stats}
+      user={{
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        pendingDowngrade: user.pendingDowngrade,
+        planEndDate: user.planEndDate?.toISOString()
       }}
     />
   );

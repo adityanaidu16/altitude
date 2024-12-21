@@ -39,85 +39,6 @@ const requestSchema = z.object({
     .default("professional")
 });
 
-// Usage tracking functions
-async function canGenerateLead(userId: string): Promise<boolean> {
-    const now = new Date();
-    const currentUsage = await prisma.monthlyUsage.findUnique({
-      where: {
-        userId_year_month: {
-          userId,
-          year: now.getFullYear(),
-          month: now.getMonth() + 1,
-        }
-      },
-      include: {
-        user: {
-          select: {
-            plan: true
-          }
-        }
-      }
-    });
-  
-    if (!currentUsage) {
-      return true; // No usage yet this month
-    }
-  
-    // Get total leads count (active + deleted)
-    const totalLeads = await prisma.lead.count({
-      where: {
-        userId,
-        monthlyUsage: {
-          year: now.getFullYear(),
-          month: now.getMonth() + 1,
-        }
-      }
-    });
-  
-    const deletedLeads = await prisma.deletedLead.count({
-      where: {
-        userId,
-        monthlyUsage: {
-          year: now.getFullYear(),
-          month: now.getMonth() + 1,
-        }
-      }
-    });
-  
-    const totalLeadCount = totalLeads + deletedLeads;
-    const limit = currentUsage.user.plan === PlanType.PLUS ? 100 : 10;
-    
-    return totalLeadCount < limit;
-  }
-
-async function trackLeadGeneration(userId: string): Promise<any> {
-  const now = new Date();
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { plan: true }
-  });
-
-  return await prisma.monthlyUsage.upsert({
-    where: {
-      userId_year_month: {
-        userId,
-        year: now.getFullYear(),
-        month: now.getMonth() + 1,
-      }
-    },
-    update: {
-      leadCount: { increment: 1 }
-    },
-    create: {
-      userId,
-      year: now.getFullYear(),
-      month: now.getMonth() + 1,
-      leadCount: 1,
-      plan: user?.plan || PlanType.FREE
-    }
-  });
-}
-
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions as any) as Session;
@@ -153,15 +74,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if user can generate more leads
-    const canGenerate = await canGenerateLead(sender.id);
-    if (!canGenerate) {
-      return NextResponse.json({
-        error: 'Monthly lead generation limit reached',
-        details: 'Upgrade your plan to generate more leads'
-      }, { status: 403 });
-    }
-
     // Extract LinkedIn username
     const targetUsername = linkedinUrl.match(/linkedin\.com\/in\/([^\/]+)/)?.[1];
     if (!targetUsername) {
@@ -182,29 +94,7 @@ export async function POST(req: Request) {
 
     const messageData = await flaskResponse.json();
 
-    // Use a transaction to ensure both lead and usage are created/updated atomically
-    const result = await prisma.$transaction(async (tx) => {
-      // Track the lead generation
-      const usage = await trackLeadGeneration(sender.id);
-
-      // Create lead with correct schema
-      const lead = await tx.lead.create({
-        data: {
-          name: messageData.profileInfo.name,
-          company: messageData.profileInfo.company,
-          position: messageData.profileInfo.position,
-          linkedinUrl,
-          message: messageData.message,
-          userId: sender.id,
-          usageId: usage.id // Link to the monthly usage record
-        }
-      });
-
-      return { lead, usage };
-    });
-
     return NextResponse.json({
-      id: result.lead.id,
       message: messageData.message,
       profileInfo: messageData.profileInfo
     });

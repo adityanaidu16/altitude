@@ -8,7 +8,6 @@ import { useSession } from 'next-auth/react';
 import { Loader2 } from 'lucide-react';
 
 const MAX_ATTEMPTS = 5;
-// Implement exponential backoff
 const getBackoffDelay = (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 10000);
 
 export default function PaymentSuccessPage() {
@@ -27,30 +26,51 @@ export default function PaymentSuccessPage() {
       if (!mounted || attempts >= MAX_ATTEMPTS) return;
 
       try {
+        console.log('Starting payment verification...');
         const sessionId = searchParams.get('session_id');
+        
         if (!sessionId) {
+          console.error('No session ID found in URL');
           setError('No session ID found');
           return;
         }
 
-        // First, check if session is already updated
-        if (session && !session.user?.needs_subscription) {
-          router.push('/dashboard');
-          return;
-        }
+        console.log('Verifying session ID:', sessionId);
+        console.log('Current user session:', session);
 
         const response = await fetch('/api/stripe/verify-session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({ 
             sessionId,
             attempt: attempts 
           }),
         });
 
+        console.log('Verify response status:', response.status);
+        const data = await response.json();
+        console.log('Verify response data:', data);
+
+        if (data.success) {
+          console.log('Payment verified successfully');
+          console.log('Updating session...');
+          
+          // Force session refresh
+          await update();
+          console.log('Session updated');
+          
+          // Add a small delay before redirecting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          window.location.href = '/dashboard';
+          return;
+        }
+
         if (response.status === 429) {
-          // Handle rate limit - wait longer before retrying
           const delay = getBackoffDelay(attempts);
+          console.log(`Rate limited, retrying in ${delay}ms`);
           if (mounted && attempts < MAX_ATTEMPTS) {
             setAttempts(prev => prev + 1);
             timeoutId = setTimeout(verifyPayment, delay);
@@ -58,30 +78,16 @@ export default function PaymentSuccessPage() {
           return;
         }
 
-        const data = await response.json();
-
-        if (data.success) {
-          // Force session refresh
-          await update();
-          
-          // Add a small delay before checking the session
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Check if the update was successful
-          if (!session?.user?.needs_subscription) {
-            setIsVerifying(false);
-            router.push('/dashboard');
-            return;
-          }
-        }
-
-        // If still not verified, try again with backoff
+        // If not successful, retry
         if (mounted && attempts < MAX_ATTEMPTS) {
+          const delay = getBackoffDelay(attempts);
+          console.log(`Verification not successful, retrying in ${delay}ms`);
           setAttempts(prev => prev + 1);
-          timeoutId = setTimeout(verifyPayment, getBackoffDelay(attempts));
+          timeoutId = setTimeout(verifyPayment, delay);
         } else if (attempts >= MAX_ATTEMPTS) {
+          console.error('Max verification attempts reached');
           setError(
-            'Verification is taking longer than expected. Your payment may have been successful, but please contact support if you continue to see this message.'
+            'Verification is taking longer than expected. Please contact support if you continue to see this message.'
           );
         }
       } catch (err) {
@@ -90,19 +96,19 @@ export default function PaymentSuccessPage() {
       }
     };
 
-    if (status === 'loading') return;
-
-    if (session && !session.user.needs_subscription) {
-      router.push('/dashboard');
-    } else if (isVerifying && attempts < MAX_ATTEMPTS) {
-      verifyPayment();
+    if (status === 'loading') {
+      console.log('Session loading...');
+      return;
     }
+
+    console.log('Starting verification process');
+    verifyPayment();
 
     return () => {
       mounted = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [session, status, searchParams, attempts, update, router, isVerifying]);
+  }, [session, status, searchParams, attempts, update, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -130,7 +136,7 @@ export default function PaymentSuccessPage() {
             </p>
             {attempts > 0 && (
               <p className="text-sm text-gray-500">
-                Verification in progress... ({attempts}/{MAX_ATTEMPTS})
+                Verification attempt {attempts} of {MAX_ATTEMPTS}
               </p>
             )}
           </>

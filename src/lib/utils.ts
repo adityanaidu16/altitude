@@ -21,7 +21,7 @@ export function extractUsername(linkedinUrl: string): string | null {
     const match = url.pathname.match(/\/in\/([^\/]+)/);
     return match ? match[1] : null;
     
-  } catch (error) {
+  } catch {
     return null;
   }
 }

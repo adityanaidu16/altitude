@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Link } from 'lucide-react';
 
 const SignIn = () => {
   return (
@@ -34,7 +35,7 @@ const SignIn = () => {
             </div>
           </Button>
           <p className="text-center text-sm text-slate-500 mt-6">
-            By continuing, you agree to our Terms of Service and Privacy Policy
+            By continuing, you agree to our <a href="/terms-of-service"><b>Terms of Service</b></a> and <a href="/privacy-policy"><b>Privacy Policy</b></a>
           </p>
         </CardContent>
       </Card>

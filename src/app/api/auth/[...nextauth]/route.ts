@@ -55,7 +55,9 @@ export const authOptions: NextAuthOptions = {
             industry: true,
             targetRoles: true,
             plan: true,
-            needs_subscription: true
+            needs_subscription: true,
+            pendingDowngrade: true,
+            planEndDate: true,
           }
         });
 
@@ -103,7 +105,9 @@ export const authOptions: NextAuthOptions = {
           industry: true,
           targetRoles: true,
           plan: true,
-          needs_subscription: true
+          needs_subscription: true,
+          pendingDowngrade: true,
+          planEndDate: true,
         }
       });
 
@@ -128,6 +132,8 @@ export const authOptions: NextAuthOptions = {
         session.user.industry = token.industry as string;
         session.user.linkedinUsername = token.linkedinUsername as string;
         session.user.targetRoles = token.targetRoles as string[];
+        session.user.pendingDowngrade = token.pendingDowngrade as boolean;
+        session.user.planEndDate = token.planEndDate as Date;
         session.user.plan = token.plan as string;
         session.user.needs_subscription = token.needs_subscription as boolean;
       }

@@ -1,8 +1,9 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 
@@ -48,69 +49,61 @@ export default function PricingPage() {
         <p className="text-xl text-gray-600">Choose the plan that's right for your career journey</p>
       </div>
 
-      {/* Pricing Cards */}
-      <div className="container mx-auto px-6 pb-24">
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {/* Basic Plan */}
-          <div className="rounded-xl border p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="text-2xl font-bold mb-2">Basic</h3>
-            <p className="text-gray-600 mb-4">Perfect for getting started</p>
-            <div className="mb-6">
-              <span className="text-4xl font-bold">$0</span>
-              <span className="text-gray-600">/month</span>
-            </div>
-            <Button className="w-full mb-6">Get Started</Button>
-            <ul className="space-y-3">
-              <Feature text="Up to 10 leads per month" />
-              <Feature text="Basic message templates" />
-              <Feature text="Connection tracking" />
-            </ul>
-          </div>
-
-          {/* Pro Plan */}
-          <div className="rounded-xl border p-8 bg-white shadow-md hover:shadow-lg transition-shadow relative">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#031b1d] text-white px-4 py-1 rounded-full text-sm">
-              Most Popular
-            </div>
-            <h3 className="text-2xl font-bold mb-2">Plus</h3>
-            <p className="text-gray-600 mb-4">For serious networkers</p>
-            <div className="mb-6">
-              <span className="text-4xl font-bold">$9</span>
-              <span className="text-gray-600">/month</span>
-            </div>
-            <Button className="w-full mb-6 bg-[#031b1d] hover:bg-[#031b1d]/90">
-              Activate Plus
-            </Button>
-            <ul className="space-y-3">
-              <Feature text="Up to 100 leads per month" />
-              <Feature text="Supercharged AI-powered message generation" />
-              <Feature text="Advanced analytics" />
-              <Feature text="Priority support" />
-            </ul>
-          </div>
-
-          {/* Enterprise Plan */}
-          <div className="rounded-xl border p-8 bg-white shadow-md hover:shadow-lg transition-shadow relative">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#031b1d] text-white px-4 py-1 rounded-full text-sm">
-              Invite Only
-            </div>
-            <h3 className="text-2xl font-bold mb-2">Pro</h3>
-            <p className="text-gray-600 mb-4">Automation unlocked.</p>
-            <div className="mb-6">
-              <span className="text-4xl font-bold">$20</span>
-              <span className="text-gray-600">/month</span>
-            </div>
-            <Button className="w-full mb-6" variant="outline">
-              Contact Sales
-            </Button>
-            <ul className="space-y-3">
-              <Feature text="Automated lead management" />
-              <Feature text="Up to 500 leads per month" />
-              <Feature text="Custom integrations" />
-            </ul>
-          </div>
-        </div>
+      <div className="flex justify-center">
+        <Link href="/dashboard" className="relative inline-block px-6 py-2 bg-[#08464B] text-white rounded-lg hover:bg-[#031b1d] transition-colors">
+          <span className="relative z-10">
+            Start Your Journey <ArrowRight className="ml-2 h-5 w-5 inline-block group-hover:translate-x-1 transition-transform" />
+          </span>
+        </Link>
       </div>
+
+      {/* Pricing Cards */}
+      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3 p-24">
+          <Card>
+            <CardHeader>
+              <CardTitle>Free Plan</CardTitle>
+              <CardDescription>Perfect for getting started</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2">
+                <li>✓ 2 campaigns per month</li>
+                <li>✓ Up to 15 prospects per campaign</li>
+                <li>✓ Basic prospect validation</li>
+                <li>✓ Personalized messages</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Plus Plan</CardTitle>
+              <CardDescription>For power users</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2">
+                <li>✓ 20 campaigns per month</li>
+                <li>✓ Up to 50 prospects per campaign</li>
+                <li>✓ Advanced prospect validation</li>
+                <li>✓ Advanced personalized messages</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pro Plan</CardTitle>
+              <CardDescription>To make that dream role a reality</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2">
+                <li>✓ Unlimited campaigns</li>
+                <li>✓ Up to 50 prospects per campaign</li>
+                <li>✓ Advanced prospect validation</li>
+                <li>✓ Advanced personalized messages</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
     </div>
   );
 }

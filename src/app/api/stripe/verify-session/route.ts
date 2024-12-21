@@ -6,82 +6,88 @@ import { prisma } from '@/lib/prisma';
 import { PlanType } from '@prisma/client';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
+const PLAN_PRICE_MAP = {
+  'price_1QUb8nRssdqzvr6AS6dtV3I5': PlanType.PLUS,
+  'price_1QXWpzRssdqzvr6AD9HvQdKI': PlanType.PRO
+};
+
 export async function POST(req: Request) {
   try {
+    console.log('Starting session verification...');
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
+      console.log('No session found');
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized'
       }, { status: 401 });
     }
 
-    // Check if user is already upgraded
-    const currentUser = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
+    const { sessionId } = await req.json();
+    console.log('Verifying session:', sessionId);
 
-    if (currentUser && !currentUser.needs_subscription) {
+    // Get Stripe session
+    const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('Stripe session status:', stripeSession.payment_status);
+
+    if (stripeSession.payment_status === 'paid') {
+      console.log('Payment is paid');
+
+      // Get subscription
+      const subscription = await stripe.subscriptions.retrieve(
+        stripeSession.subscription as string
+      );
+      console.log('Found subscription:', subscription.id);
+
+      // Get price ID from subscription
+      const priceId = subscription.items.data[0].price.id;
+      console.log('Price ID:', priceId);
+
+      if (!PLAN_PRICE_MAP[priceId as keyof typeof PLAN_PRICE_MAP]) {
+        throw new Error('Invalid price ID');
+      }
+
+      // Get plan type
+      const planType = PLAN_PRICE_MAP[priceId as keyof typeof PLAN_PRICE_MAP];
+      console.log('Plan type:', planType);
+
+      // Update user
+      const user = await prisma.user.update({
+        where: { email: session.user.email },
+        data: {
+          plan: planType,
+          needs_subscription: false,
+          stripeCustomerId: stripeSession.customer as string,
+          stripeSubscriptionId: subscription.id,
+          planStartDate: new Date(),
+        },
+      });
+
+      console.log('Updated user:', user.id, 'to plan:', planType);
+
       return NextResponse.json({
         success: true,
         user: {
-          plan: currentUser.plan,
+          plan: planType,
           needs_subscription: false
         }
       });
     }
 
-    const { sessionId } = await req.json();
-
-    try {
-      // Retrieve the Stripe session
-      const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
-
-      if (stripeSession.payment_status === 'paid') {
-        // Update user in database
-        const updatedUser = await prisma.user.update({
-          where: { email: session.user.email },
-          data: {
-            plan: PlanType.PLUS,
-            needs_subscription: false,
-            stripeCustomerId: stripeSession.customer as string,
-            stripeSubscriptionId: stripeSession.subscription as string,
-            planStartDate: new Date(),
-          },
-        });
-
-        return NextResponse.json({
-          success: true,
-          user: {
-            plan: updatedUser.plan,
-            needs_subscription: false
-          }
-        });
-      }
-
-      return NextResponse.json({
-        success: false,
-        error: 'Payment not completed',
-        status: stripeSession.payment_status
-      });
-
-    } catch (stripeError: any) {
-      // Handle rate limiting
-      if (stripeError.statusCode === 429) {
-        return NextResponse.json({
-          success: false,
-          error: 'Too many requests',
-          retryAfter: stripeError.headers?.['retry-after'] || 5
-        }, { status: 429 });
-      }
-
-      throw stripeError;
-    }
-  } catch (error) {
-    console.error('Stripe verification error:', error);
+    console.log('Payment not completed');
     return NextResponse.json({
       success: false,
-      error: 'Payment verification failed'
+      error: 'Payment not completed',
+      status: stripeSession.payment_status
+    });
+
+  } catch (error) {
+    console.error('Verification error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Payment verification failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

@@ -4,121 +4,135 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { PlanType } from '@prisma/client';
-import { type WebhookEvent } from '@stripe/stripe-js';
 
-// Raw body parser config
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
+async function processSubscriptionChange(subscription: any) {
+  console.log('Processing subscription change:', subscription.id);
+  const user = await prisma.user.findFirst({
+    where: { stripeSubscriptionId: subscription.id }
+  });
+
+  if (!user) {
+    console.log('No user found for subscription:', subscription.id);
+    return;
+  }
+
+  const now = new Date();
+  const endDate = new Date(subscription.current_period_end * 1000);
+  
+  // Check if subscription has ended or is cancelled and the period has ended
+  const hasEnded = subscription.status === 'canceled' ||
+    (subscription.cancel_at_period_end && now >= endDate);
+
+  console.log('Subscription status:', {
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    currentPeriodEnd: endDate,
+    hasEnded
+  });
+
+  if (hasEnded) {
+    console.log(`Downgrading user ${user.id} to FREE plan`);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        plan: PlanType.FREE,
+        pendingDowngrade: false,
+        planEndDate: null,
+        stripeSubscriptionId: null
+      }
+    });
+  }
+}
+
+async function handleInvoicePaid(invoice: any) {
+  const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+  const user = await prisma.user.findFirst({
+    where: { stripeSubscriptionId: subscription.id }
+  });
+
+  if (!user) return;
+
+  // Update the user's subscription status
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      planEndDate: new Date(subscription.current_period_end * 1000),
+      // Reset pendingDowngrade if payment was successful
+      pendingDowngrade: false
+    }
+  });
+}
+
+async function handleInvoiceFailed(invoice: any) {
+  const user = await prisma.user.findFirst({
+    where: { stripeCustomerId: invoice.customer }
+  });
+
+  if (!user) return;
+
+  // You might want to notify the user or take other actions
+  console.log(`Payment failed for user ${user.id}`);
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.text();
-    
-    // Get raw headers 
-    const rawHeaders = req.headers;
-    const signature = rawHeaders.get('stripe-signature');
+    const headersList = headers();
+    const signature = headersList.get('stripe-signature');
 
-    if (!signature) {
-      console.error('⚠️ No Stripe signature found');
-      return new Response('No signature found', { status: 400 });
+    if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error('Missing signature or webhook secret');
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    let event: WebhookEvent;
-
+    let event;
     try {
       event = stripe.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET!
-      ) as WebhookEvent;
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+      console.log('Received webhook event:', event.type);
     } catch (err) {
-      console.error('⚠️ Webhook signature verification failed:', err);
-      return new Response(
-        JSON.stringify({
-          error: `Webhook Error: ${err instanceof Error ? err.message : 'Unknown Error'}`
-        }), 
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      console.error('Error verifying webhook:', err);
+      return NextResponse.json(
+        { error: `Webhook verification failed: ${err.message}` },
+        { status: 400 }
       );
     }
 
-    console.log(`✅ Webhook verified: ${event.type}`);
+    // Handle various subscription and billing events
+    switch (event.type) {
+      case 'customer.subscription.deleted':
+      case 'customer.subscription.updated':
+        await processSubscriptionChange(event.data.object);
+        break;
+      
+      case 'invoice.paid':
+        await handleInvoicePaid(event.data.object);
+        break;
+      
+      case 'invoice.payment_failed':
+        await handleInvoiceFailed(event.data.object);
+        break;
 
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-
-      try {
-        // Validate required fields
-        if (!session.metadata?.userId) {
-          throw new Error('Missing user ID in session metadata');
-        }
-
-        // Get subscription details
-        const subscriptionId = session.subscription as string;
-        if (!subscriptionId) {
-          throw new Error('Missing subscription ID in session');
-        }
-
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-        // Update user subscription status
-        await prisma.user.update({
-          where: {
-            id: session.metadata.userId,
-          },
-          data: {
-            stripeSubscriptionId: subscription.id,
-            stripeCustomerId: subscription.customer as string,
-            plan: PlanType.PLUS,
-            planStartDate: new Date(),
-            needs_subscription: false,
-          },
-        });
-
-        console.log(`✅ User ${session.metadata.userId} upgraded to Plus plan`);
-        
-        return new Response(
-          JSON.stringify({ success: true, userId: session.metadata.userId }),
-          { 
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-
-      } catch (error) {
-        console.error('❌ Error processing subscription:', error);
-        return new Response(
-          JSON.stringify({ error: 'Failed to process subscription' }),
-          { 
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-      }
+      case 'customer.subscription.trial_will_end':
+        // Handle trial ending soon
+        break;
     }
 
-    // Handle other events
-    return new Response(
-      JSON.stringify({ received: true, type: event.type }),
-      { 
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-
+    return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('❌ Error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    console.error('Webhook error:', error);
+    return NextResponse.json(
+      { error: 'Webhook handler failed' },
+      { status: 500 }
     );
   }
 }

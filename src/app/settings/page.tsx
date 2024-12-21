@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PaymentManager from '@/components/PaymentManager';
 
 export default function SettingsPage() {
   const { data: session, status } = useSession({
@@ -64,11 +65,13 @@ export default function SettingsPage() {
       { id: 'swe', name: 'Software Engineering' },
       { id: 'pm', name: 'Product Management' },
       { id: 'data', name: 'Data Science' },
+      { id: 'quant-dev', name: 'Quantitative Developer' },
     ],
     banking: [
       { id: 'ib', name: 'Investment Banking' },
       { id: 'sales', name: 'Sales & Trading' },
       { id: 'research', name: 'Research' },
+      { id: 'quant-trading', name: 'Quantitative Trading' },
     ],
     consulting: [
       { id: 'strategy', name: 'Strategy Consulting' },
@@ -106,7 +109,6 @@ export default function SettingsPage() {
         throw new Error(data.error || 'Failed to update settings');
       }
   
-      await update();
       toast({
         title: "Settings updated",
         description: "Your profile settings have been updated successfully.",
@@ -195,6 +197,7 @@ export default function SettingsPage() {
                     value={formData.linkedinUsername}
                     onChange={(e) => handleInputChange('linkedinUsername', e.target.value)}
                     placeholder="your-linkedin-username"
+                    readOnly
                   />
                 </div>
 
@@ -259,6 +262,8 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
+
+              <PaymentManager />
 
               <Button 
               type="submit" 

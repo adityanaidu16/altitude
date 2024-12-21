@@ -5,17 +5,20 @@ import type { NextRequest } from "next/server";
 
 // Define path patterns
 const PUBLIC_PATHS = new Set([
-  '/',  // Landing page
+  '/', // Landing page
   '/auth/signin',
   '/auth/signup',
   '/auth/onboarding',
-  '/payment/success'
+  '/payment/success',
+  '/privacy-policy',
+  '/terms-of-service',
+  '/pricing'
 ]);
 
 const AUTH_ONLY_REDIRECT_PATHS = new Set([
   '/auth/signin',
-  '/auth/signup',
   '/auth/onboarding'
+  // Removed '/auth/signup' so authenticated users can access it for upgrades
 ]);
 
 const PROTECTED_PATHS = new Set([
@@ -45,7 +48,7 @@ export async function middleware(request: NextRequest) {
 
   // Handle public paths
   if (PUBLIC_PATHS.has(pathname)) {
-    // Only redirect authenticated users from auth pages, not from the landing page
+    // Only redirect authenticated users from auth pages (except signup), not from the landing page
     if (AUTH_ONLY_REDIRECT_PATHS.has(pathname) && 
         token && 
         !token.needs_subscription && 
@@ -75,11 +78,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/signup', request.url));
   }
 
-  // Prevent access to auth pages if user is fully authenticated
+  // Allow access to signup page regardless of authentication status
+  if (pathname === '/auth/signup') {
+    return NextResponse.next();
+  }
+
+  // Prevent access to other auth pages if user is fully authenticated
   if (
     hasCompletedOnboarding &&
     !needsSubscription &&
-    pathname.startsWith('/auth/')
+    pathname.startsWith('/auth/') &&
+    pathname !== '/auth/signup'
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -41,11 +42,13 @@ const TARGET_ROLES = {
     { id: 'swe', name: 'Software Engineering' },
     { id: 'pm', name: 'Product Management' },
     { id: 'data', name: 'Data Science' },
+    { id: 'quant-dev', name: 'Quantitative Developer' },
   ],
   banking: [
     { id: 'ib', name: 'Investment Banking' },
     { id: 'sales', name: 'Sales & Trading' },
     { id: 'research', name: 'Research' },
+    { id: 'quant-trading', name: 'Quantitative Trading' },
   ],
   consulting: [
     { id: 'strategy', name: 'Strategy Consulting' },
@@ -60,18 +63,35 @@ export default function OnboardingPage() {
   const { data: session, update } = useSession();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<UserPreferences>({
     careerGoal: 'internship',
     industry: '',
     targetRoles: [],
-    linkedinUsername: ''
+    linkedinUsername: '',
+    linkedinUsernameConfirm: ''
   });
 
+  const [usernameError, setUsernameError] = useState('');
+
   const handleNext = async () => {
+    if (currentStep === 4) {
+      if (formData.linkedinUsername !== formData.linkedinUsernameConfirm) {
+        setUsernameError('Usernames do not match');
+        return;
+      }
+      if (!formData.linkedinUsername) {
+        setUsernameError('LinkedIn username is required');
+        return;
+      }
+    }
+
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     } else {
       try {
+        setIsLoading(true);
+        const { linkedinUsernameConfirm, ...submitData } = formData;
         console.log('Sending form data:', formData);
         console.log('Current session before update:', session);
   
@@ -102,6 +122,8 @@ export default function OnboardingPage() {
           description: error instanceof Error ? error.message : "Failed to save preferences",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -110,6 +132,14 @@ export default function OnboardingPage() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  const sanitizeUsername = (input: string) => {
+    return input
+      .replace(/^https?:\/\/(?:www\.)?linkedin\.com\/in\//, '')
+      .replace(/\/$/, '')
+      .replace('@', '')
+      .split('?')[0];
   };
 
   if (!session) return null;
@@ -189,46 +219,77 @@ export default function OnboardingPage() {
           )}
 
           {currentStep === 4 && (
-            <div className="space-y-4">
+              <div className="space-y-4">
                 <h2 className="text-xl font-semibold">Enter your LinkedIn username</h2>
-                <Input
-                value={formData.linkedinUsername}
-                onChange={(e) => {
-                    // Sanitize the LinkedIn username
-                    const rawInput = e.target.value;
-                    let sanitizedUsername = rawInput
-                    // Remove any URL parts
-                    .replace(/^https?:\/\/(?:www\.)?linkedin\.com\/in\//, '')
-                    // Remove trailing slash if present
-                    .replace(/\/$/, '')
-                    // Remove @ symbol if present
-                    .replace('@', '')
-                    // Remove any query parameters
-                    .split('?')[0];
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
+                  <p className="text-amber-800 text-sm">
+                    Important: Your LinkedIn username cannot be changed later. Please ensure it is correct.
+                  </p>
+                </div>
 
-                    setFormData({ ...formData, linkedinUsername: sanitizedUsername });
-                }}
-                placeholder="your-linkedin-username"
-                />
-                <p className="text-sm text-gray-500">
-                Enter the username from linkedin.com/in/username
-                </p>
-            </div>
-          )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">LinkedIn Username</label>
+                  <Input
+                    value={formData.linkedinUsername}
+                    onChange={(e) => {
+                      const sanitizedUsername = sanitizeUsername(e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        linkedinUsername: sanitizedUsername
+                      }));
+                      setUsernameError('');
+                    }}
+                    placeholder="your-linkedin-username"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Enter the username from linkedin.com/in/username
+                  </p>
+                </div>
 
-          <div className="mt-6 flex justify-between">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Confirm LinkedIn Username</label>
+                  <Input
+                    value={formData.linkedinUsernameConfirm}
+                    onChange={(e) => {
+                      const sanitizedUsername = sanitizeUsername(e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        linkedinUsernameConfirm: sanitizedUsername
+                      }));
+                      setUsernameError('');
+                    }}
+                    placeholder="Confirm your username"
+                  />
+                </div>
+
+                {usernameError && (
+                  <p className="text-sm text-red-500 mt-2">{usernameError}</p>
+                )}
+              </div>
+            )}
+
+        <div className="mt-6 flex justify-between">
             <Button
               variant="outline"
               onClick={handleBack}
-              disabled={currentStep === 1}
+              disabled={currentStep === 1 || isLoading}
             >
               Back
             </Button>
             <Button
               onClick={handleNext}
               style={{ backgroundColor: '#031b1d' }}
+              disabled={isLoading}
             >
-              {currentStep === 4 ? 'Complete' : 'Next'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {currentStep === 4 ? 'Completing...' : 'Loading...'}
+                </>
+              ) : (
+                currentStep === 4 ? 'Complete' : 'Next'
+              )}
             </Button>
           </div>
         </CardContent>
