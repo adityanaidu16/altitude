@@ -3,15 +3,20 @@
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import Image from 'next/image'
+import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-const SignIn = () => {
+const SignInContent = () => {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto w-16 h-16 mb-2">
-            <Image src="/altitude.png" alt="Altitude logo" className="w-full h-full" />
+            <Image src="/altitude.png" alt="Altitude logo" width={64} height={64} />
           </div>
           <CardTitle className="text-2xl font-bold">Welcome to Altitude</CardTitle>
           <CardDescription className="text-slate-600">
@@ -20,7 +25,9 @@ const SignIn = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
-            onClick={() => signIn('linkedin', { callbackUrl: '/dashboard' })}
+            onClick={() => signIn('linkedin', { 
+              callbackUrl: callbackUrl.startsWith('http://localhost') ? '/dashboard' : callbackUrl 
+            })}
             className="w-full h-12 bg-[#0A66C2] hover:bg-[#004182] transition-colors duration-200"
           >
             <div className="flex items-center justify-center space-x-2">
@@ -40,6 +47,14 @@ const SignIn = () => {
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+const SignIn = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInContent />
+    </Suspense>
   );
 };
 

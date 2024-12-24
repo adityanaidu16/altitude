@@ -26,8 +26,19 @@ root_dir = Path(__file__).parent.parent
 load_dotenv(root_dir / '.env')
 
 app = Flask(__name__)
-CORS(app)
-
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://ec2-54-162-204-25.compute-1.amazonaws.com", 
+                   "https://ec2-54-162-204-25.compute-1.amazonaws.com",
+                   "http://altitudeio.com",
+                   "https://altitudeio.com",
+                   "http://www.altitudeio.com",
+                   "https://www.altitudeio.com",
+                   "http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
 RAPIDAPI_HOST = "linkedin-api8.p.rapidapi.com"
@@ -208,6 +219,13 @@ def generate_message_cached(sender_str: str, target_str: str, tone: str) -> Dict
         return json.loads(response.choices[0].message.content)
     except Exception as e:
         return {"error": str(e)}
+
+@app.route('/api/healthcheck')
+def healthcheck():
+    return jsonify({
+        "status": "healthy",
+        "service": "altitude-api"
+    })
 
 @app.route('/api/generate-message', methods=['POST'])
 def handle_message_generation():
