@@ -3,15 +3,15 @@ import type { NextAuthOptions } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { PlanType } from "@prisma/client";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function LinkedInProvider(config: any) {
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://altitudeio.com';
+  
   return {
     id: "linkedin",
     name: "LinkedIn",
     type: "oauth",
     client: { token_endpoint_auth_method: "client_secret_post" },
     issuer: "https://www.linkedin.com",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     profile(profile: { sub: any; name: any; email: string; picture: any; }) {
       return {
         id: profile.sub,
@@ -24,7 +24,8 @@ function LinkedInProvider(config: any) {
     wellKnown: "https://www.linkedin.com/oauth/.well-known/openid-configuration",
     authorization: {
       params: {
-        scope: "openid profile email"
+        scope: "openid profile email",
+        redirect_uri: `${baseUrl}/api/auth/callback/linkedin`
       }
     },
     style: { logo: "/linkedin.svg", bg: "#069", text: "#fff" },
@@ -41,13 +42,23 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      return baseUrl
+      console.log('Redirect callback:', { url, baseUrl });
+      // Always redirect to the dashboard after successful sign in
+      if (url.includes('/auth/signin')) {
+        return `${baseUrl}/dashboard`;
+      }
+      
+      // Handle other redirects
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      } else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      
+      return baseUrl;
     },
     async signIn({ user }) {
+      console.log('SignIn callback:', { user });
       try {
         if (!user.email) return false;
 
