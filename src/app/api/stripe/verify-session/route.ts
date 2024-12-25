@@ -7,8 +7,8 @@ import { PlanType } from '@prisma/client';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 
 const PLAN_PRICE_MAP = {
-  'price_1QUb8nRssdqzvr6AS6dtV3I5': PlanType.PLUS,
-  'price_1QXWpzRssdqzvr6AD9HvQdKI': PlanType.PRO
+  [process.env.NEXT_PUBLIC_STRIPE_PLUS_PRICE_ID!]: PlanType.PLUS,
+  [process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!]: PlanType.PRO
 };
 
 export async function POST(req: Request) {

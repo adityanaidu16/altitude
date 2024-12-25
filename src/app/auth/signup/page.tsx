@@ -86,7 +86,7 @@ export default function SignupPage() {
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          priceId: 'price_1QUb8nRssdqzvr6AS6dtV3I5', // PLUS plan price ID
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PLUS_PRICE_ID, // PLUS plan price ID
         }),
       });
   
@@ -122,7 +122,7 @@ export default function SignupPage() {
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          priceId: 'price_1QXWpzRssdqzvr6AD9HvQdKI', // PRO plan price ID
+          priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID, // PRO plan price ID
         }),
       });
   
