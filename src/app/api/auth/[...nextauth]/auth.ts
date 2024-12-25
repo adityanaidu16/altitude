@@ -3,6 +3,7 @@ import type { NextAuthOptions } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { PlanType } from "@prisma/client";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function LinkedInProvider(config: any) {
   const baseUrl = process.env.NEXTAUTH_URL || 'https://altitudeio.com';
   
@@ -12,6 +13,7 @@ function LinkedInProvider(config: any) {
     type: "oauth",
     client: { token_endpoint_auth_method: "client_secret_post" },
     issuer: "https://www.linkedin.com",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     profile(profile: { sub: any; name: any; email: string; picture: any; }) {
       return {
         id: profile.sub,
